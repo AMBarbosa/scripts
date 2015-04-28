@@ -1,0 +1,43 @@
+# preparar una tabla con las especies en la primera columna y los codigos de cuadricula en la segunda
+# guardarla como .csv
+
+# importar la tabla a R [reemplazando la ruta y nombre del archivo]:
+atlas <- read.csv("/datos/atlas/......./Insectivoros.csv", sep = ";")
+
+# ver las primeras filas de la tabla para confirmar que todo esta' en su sitio:
+head(atlas)
+# (si no esta' bien, quizas cambiar el tipo de SEParador en el comando arriba)
+
+# confirmar que no hay especies mal escritas:
+names(atlas) <- c("ESPECIE", "CUTM10")
+atlas$ESPECIE <- as.character(atlas$ESPECIE)
+sort(unique(atlas$ESPECIE))
+# (si hay especies de mas, corregir la tabla original)
+
+# eliminar espacios al final de nombres de especies y cuadriculas:
+atlas$ESPECIE <- sub(" +$", "", atlas$ESPECIE)
+atlas$CUTM10 <- sub(" +$", "", atlas$CUTM10)
+
+# eliminar dobles espacios en el nombre de las especies:
+atlas$ESPECIE <- gsub("  ", " ", atlas$ESPECIE)
+
+# anadir columna con los codigos de especie (4+4 letras):
+separados <- strsplit(atlas$ESPECIE, " ")
+gen <- sp <- vector("character", length(separados))
+for (i in 1:length(separados)) 
+  { gen[i] <- separados[[i]][1]
+    sp[i] <- separados[[i]][2] }
+atlas$SpCode <- paste(substr(gen, 1, 4), substr(sp, 1, 4), sep = "_")
+
+# confirmar que hay el mismo numero de nombres que de codigos de especie:
+length(unique(atlas$ESPECIE))
+length(unique(atlas$SpCode))
+# (si no son iguales, corregir tabla y volver al inicio)
+
+# crear una tabla con los unos y ceros para cada especie:
+atlas01 <- as.data.frame(unclass(table(atlas$CUTM10, atlas$SpCode)))
+atlas01 <- data.frame(row.names(atlas01), atlas01)
+names(atlas01)[1] <- "CUTM10"
+
+# guardar esta tabla en el disco (poner el nombre y ruta de carpeta deseados):
+write.csv(atlas01, "/datos/atlas/......./Insectivoros01.csv", row.names = FALSE)
