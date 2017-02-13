@@ -1,0 +1,25 @@
+# instalar el paquete fuzzySim (disponible en R-Forge):
+install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
+
+# cargar el paquete en la presente sesion de R:
+library(fuzzySim)
+
+# cargar y mirar los datos de ejemplo:
+data(rotif.env)
+head(rotif.env)
+names(rotif.env)
+
+# hacer modelos para una o varias especies:
+rotif.mods <- multGLM(data = rotif.env, sp.cols = 18:47, var.cols = 5:17, id.col = 1)
+
+# mirar un modelo:
+summary(rotif.mods$models[[1]])
+summary(rotif.mods$models[["Abrigh"]])
+
+# mirar los valores predichos por los modelos:
+head(rotif.mods$predictions)
+
+# ver opciones adicionales:
+help(multGLM)
+multGLM(data, sp.cols, var.cols, id.col = NULL, family = "binomial", test.sample = 0, FDR = FALSE, corSelect = FALSE, cor.thresh = 0.8, step = TRUE, trace = 0, start = "null.model", direction = "both", Y.prediction = FALSE, P.prediction = TRUE, Favourability = TRUE, group.preds = TRUE, trim = TRUE)
+
