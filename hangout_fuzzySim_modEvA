@@ -1,3 +1,16 @@
+## OBTENER DATOS DE DISTRIBUCION ##
+
+install.packages("rgbif")
+library(rgbif)
+
+Gpy <- occ_data(scientificName = "Galemys pyrenaicus")
+names(Gpy)
+str(Gpy$data)
+plot(Gpy$data[ , c("decimalLongitude", "decimalLatitude")], main = "Desman", pch = 20)
+gbifmap(Gpy)
+
+
+
 # instalar el paquete fuzzySim (disponible en R-Forge):
 install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
 
