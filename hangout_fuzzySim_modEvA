@@ -1,20 +1,56 @@
-## OBTENER DATOS DE DISTRIBUCION ##
+#####################################
+### OBTENER DATOS DE DISTRIBUCION ###
+#####################################
 
+# paquete para obtener datos del GBIF:
 install.packages("rgbif")
 library(rgbif)
 
+# obtener presencias de desman iberico:
 Gpy <- occ_data(scientificName = "Galemys pyrenaicus")
 names(Gpy)
 str(Gpy$data)
-plot(Gpy$data[ , c("decimalLongitude", "decimalLatitude")], main = "Desman", pch = 20)
-gbifmap(Gpy)
+Gpy_pts <- Gpy$data[ , c("decimalLongitude", "decimalLatitude")]
+
+# obtener presencias de salamandra lusitanica:
+Clu <- occ_data(scientificName = "Chioglossa lusitanica")
+Clu_pts <- Clu$data[ , c("decimalLongitude", "decimalLatitude")]
+
+# mapear las presencias:
+install.packages("maps")
+library(maps)
+
+map("world")
+points(Gpy_pts, col = "red")
+
+# mapear solo el area que contiene nuestras presencias:
+map('world', 
+    xlim = range(Gpy_pts$decimalLongitude, na.rm = T), 
+    ylim = range(Gpy_pts$decimalLatitude, na.rm = T))
+points(Gpy_pts, cex = 0.3)
+title("Desman")
+
+map('world', 
+    xlim = range(Clu_pts$decimalLongitude, na.rm = T), 
+    ylim = range(Clu_pts$decimalLatitude, na.rm = T))
+points(Clu_pts, cex = 0.3)
+title("Salamandra")
+
+# OBSERVAR LOS DATOS DISPONIBLES:
+# los datos solo estan minimamente completos en Espana
+# los "puntos de presencia" son demasiado regulares:
+# son centroides de cuadriculas (en este caso, UTM 10x10 km)
+
+# importar malla UTM 10 de Espana:
 
 
 
-# instalar el paquete fuzzySim (disponible en R-Forge):
+#####################################
+### HACER MODELOS DE DISTRIBUCION ###
+#####################################
+
+# instalar y cargar el paquete fuzzySim (disponible en R-Forge):
 install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
-
-# cargar el paquete en la presente sesion de R:
 library(fuzzySim)
 
 # cargar y mirar los datos de ejemplo:
