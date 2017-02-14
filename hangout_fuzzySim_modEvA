@@ -6,14 +6,14 @@
 if (!require(rgbif)) install.packages("rgbif")
 library(rgbif)
 
-# importar presencias de Galemys iberico:
+# importar presencias de desman iberico:
 Gpyr <- occ_data(scientificName = "Galemys pyrenaicus")
 names(Gpyr)
 str(Gpyr$data)
 Gpyr_coords <- na.omit(Gpyr$data[ , c("decimalLongitude", "decimalLatitude")])
 nrow(Gpyr_coords)  # 484
 
-# obtener presencias de Chioglossa lusitanica:
+# obtener presencias de salamandra lusitanica:
 Clus <- occ_data(scientificName = "Chioglossa lusitanica")
 Clus_coords <- na.omit(Clus$data[ , c("decimalLongitude", "decimalLatitude")])
 nrow(Clus_coords)  # 209
@@ -99,7 +99,7 @@ Clus_cuadrics <- over(Clus_pts, cuadrics)
 head(Clus_cuadrics)
 nrow(Clus_cuadrics)  # 209
 
-# anadir datos de presencia/ausencia al mapa de cuadriculas cuadrics:
+# anadir datos de presencia/ausencia al mapa de cuadriculas:
 head(cuadrics@data)  # tabla de atributos del mapa
 cuadrics@data$Galpyr <- 0  # anadir columna y llenarla con ceros
 cuadrics@data$Galpyr[cuadrics@data$COD10X10 %in% Gpyr_cuadrics$COD10X10] <- 1  # poner 1 donde hay puntos
@@ -114,13 +114,13 @@ spplot(cuadrics,
        #xlim = extent(Gpyr_pts)[1:2],
        #ylim = extent(Gpyr_pts)[3:4],
        col = NA,  # color del borde de los poligonos
-       main = "Galemys")  # tarda un poco
+       main = "Galemys")
 spplot(cuadrics, 
        zcol = "Chilus",
        #xlim = extent(Clus_pts)[1:2],
        #ylim = extent(Clus_pts)[3:4],
        col = NA,  # color del borde de los poligonos
-       main = "Chioglossa")  # tarda un poco
+       main = "Chioglossa")
 
 
 #####################################
@@ -158,6 +158,9 @@ wclim_cuadrics <- zonalFromZip(zip.file = wclim_file,  # zip con las variables r
                                aux.file.ext = ".hdr")  # extension del archivo auxiliar
 # (el 'zonal' tambien tarda un rato)
 head(wclim_cuadrics)
+
+#unlink(wclim_file)  # si se quiere borrar el zip del disco
+#unlink(c("bio1.bil", "bio1.hdr"))  # si se quiere borrar el mapa raster descomprimido
 
 
 #############################################
@@ -280,17 +283,46 @@ spplot(cuadrics, zcol = "Chilus_F", col = NA, main = "Favorabilidad para Chioglo
 if (!require(modEvA)) install.packages("modEvA")
 library(modEvA)
 
+# visualizar las predicciones del modelo frente a los datos observados:
 plotGLM(mods$models$Galpyr, main = "Galemys - modelo")
 plotGLM(mods$models$Chilus, main = "Chioglossa - modelo")
 
+# visualizar la curva ROC y calcular el AUC:
 AUC(mods$models$Galpyr, main = "Galemys - curva ROC")
 AUC(mods$models$Chilus, main = "Chioglossa - curva ROC")
 
+# calcular medidas basadas en un umbral de clasificacion:
 threshMeasures(mods$models$Galpyr, thresh = "preval", ylim = c(0, 1), main = "Galemys - medidas umbral")
 threshMeasures(mods$models$Chilus, thresh = "preval", ylim = c(0, 1), main = "Chioglossa - curva ROC")
 
+# calcular umbrales de clasificacion que optimizan distintas medidas:
+optiThresh(mods$models$Galpyr, pch = 20)
+optiThresh(mods$models$Chilus, pch = 20)
+
+# calcular umbrales de clasificacion que optimizan el equilibrio entre pares de medidas:
+optiPair(mods$models$Galpyr, measures = c("Sensitivity", "Specificity"), main = "Optimal balance")
+optiPair(mmods$models$Chilus, measures = c("Sensitivity", "Specificity"), main = "Optimal balance")
+
+# calcular la devianza explicada:
+Dsquared(model = mods$models$Galpyr)
+Dsquared(model = mods$models$Chilus)
+
+# calcular los pseudo-R-cuadrados:
+RsqGLM(model = mods$models$Galpyr)
+RsqGLM(model = mods$models$Chilus)
+barplot(unlist(RsqGLM(model = mods$models$Galpyr)), ylim = c(0, 1), las = 2)
+barplot(unlist(RsqGLM(model = mods$models$Chilus)), ylim = c(0, 1), las = 2)
+
+# analizar la recta de calibracion de Miller (util solo para extrapolacion):
 MillerCalib(mods$models$Galpyr, main = "Galemys - recta de Miller")
 MillerCalib(mods$models$Chilus, main = "Chioglossa - recta de Miller")
 
+# analizar la bondad de ajuste de Hosmer-Lemeshow (atencion, que cambia con los bins!):
 HLfit(mods$models$Galpyr, bin.method = "n.bins", main = "Galemys - bondad de ajuste de H-L")
+HLfit(mods$models$Galpyr, bin.method = "quantiles", main = "Galemys - bondad de ajuste de H-L")
 HLfit(mods$models$Chilus, bin.method = "n.bins", main = "Chioglossa - bondad de ajuste de H-L")
+HLfit(mods$models$Chilus, bin.method = "quantiles", main = "Chioglossa - bondad de ajuste de H-L")
+
+# evaluar varios modelos a la vez:
+model_eval <- multModEv(models = mods$models, thresh = "preval", bin.method = "quantiles")
+model_eval
