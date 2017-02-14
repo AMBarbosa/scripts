@@ -2,73 +2,295 @@
 ### OBTENER DATOS DE DISTRIBUCION ###
 #####################################
 
-# paquete para obtener datos del GBIF:
-install.packages("rgbif")
+# paquete para importar datos del GBIF:
+if (!require(rgbif)) install.packages("rgbif")
 library(rgbif)
 
-# obtener presencias de desman iberico:
-Gpy <- occ_data(scientificName = "Galemys pyrenaicus")
-names(Gpy)
-str(Gpy$data)
-Gpy_pts <- Gpy$data[ , c("decimalLongitude", "decimalLatitude")]
+# importar presencias de Galemys iberico:
+Gpyr <- occ_data(scientificName = "Galemys pyrenaicus")
+names(Gpyr)
+str(Gpyr$data)
+Gpyr_coords <- na.omit(Gpyr$data[ , c("decimalLongitude", "decimalLatitude")])
+nrow(Gpyr_coords)  # 484
 
-# obtener presencias de salamandra lusitanica:
-Clu <- occ_data(scientificName = "Chioglossa lusitanica")
-Clu_pts <- Clu$data[ , c("decimalLongitude", "decimalLatitude")]
+# obtener presencias de Chioglossa lusitanica:
+Clus <- occ_data(scientificName = "Chioglossa lusitanica")
+Clus_coords <- na.omit(Clus$data[ , c("decimalLongitude", "decimalLatitude")])
+nrow(Clus_coords)  # 209
 
 # mapear las presencias:
-install.packages("maps")
+if (!require(maps)) install.packages("maps")
 library(maps)
 
 map("world")
-points(Gpy_pts, col = "red")
+points(Gpyr_coords, col = "red")
 
 # mapear solo el area que contiene nuestras presencias:
-map('world', 
-    xlim = range(Gpy_pts$decimalLongitude, na.rm = T), 
-    ylim = range(Gpy_pts$decimalLatitude, na.rm = T))
-points(Gpy_pts, cex = 0.3)
-title("Desman")
+map("world", 
+    xlim = range(Gpyr_coords$decimalLongitude, na.rm = T), 
+    ylim = range(Gpyr_coords$decimalLatitude, na.rm = T)
+    )
+points(Gpyr_coords, cex = 0.3)
+title("Galemys")
 
-map('world', 
-    xlim = range(Clu_pts$decimalLongitude, na.rm = T), 
-    ylim = range(Clu_pts$decimalLatitude, na.rm = T))
-points(Clu_pts, cex = 0.3)
-title("Salamandra")
+map("world", 
+    xlim = range(Clus_coords$decimalLongitude, na.rm = T), 
+    ylim = range(Clus_coords$decimalLatitude, na.rm = T)
+    )
+points(Clus_coords, cex = 0.3)
+title("Chioglossa")
 
 # OBSERVAR LOS DATOS DISPONIBLES:
-# los datos solo estan minimamente completos en Espana
-# los "puntos de presencia" son demasiado regulares:
-# son centroides de cuadriculas (en este caso, UTM 10x10 km)
+# los datos solo estan minimamente completos en Espana (en GBIF, pero hay otras fuentes!)
+# los "puntos de presencia" son demasiado regulares: centroides de cuadriculas (en este caso, UTM 10x10 km)
 
-# importar malla UTM 10 de Espana:
 
+####################################
+### OBTENER UNIDADES GEOGRAFICAS ###
+####################################
+
+# importar malla UTM 10 km de Espana:
+# citar FUENTE: Ministerio de Agricultura y Pesca, Alimentacion y Medio Ambiente (Espana)
+# disponible en "Inventario Nacional de Especies Terrestres", MAGRAMA (URL puede cambiar!)
+cuadrics_url <- "http://www.mapama.gob.es/es/cartografia-y-sig/ide/descargas/biodiversidad/riqueza-especies_tcm7-439214.zip"
+getwd()  # carpeta donde se va a descargar
+download.file(cuadrics_url, destfile = "cuadrics.zip")
+unzip("cuadrics.zip", exdir = "cuadriculas")
+#unlink("cuadrics.zip")  # si se quiere borrar el zip de la carpeta
+list.files("cuadriculas")
+
+# importar el shapefile a R:
+
+if (!require(rgdal)) install.packages("rgdal")
+library(rgdal)
+cuadrics <- readOGR(dsn = "cuadrics", layer = "RiquezaEspecies")
+plot(cuadrics)
+#unlink("cuadriculas", recursive = TRUE)  # si se quiere borrar del disco la carpeta con el shapefile
+
+# consultar proyeccion geografica:
+cuadrics@proj4string@projargs  # "+proj=longlat +ellps=GRS80 +no_defs"
+
+# convertir a coordenadas geograficas, como nuestras presencias:
+library(sp)
+cuadrics <- spTransform(cuadrics, CRS("+proj=longlat +datum=WGS84 +no_defs"))
+
+# ver si todo esta' en su sitio (cuadriculas y presencias):
+plot(cuadrics)
+points(Gpyr_coords, cex = 0.3, col = "red")
+points(Clus_coords, cex = 0.3, col = "blue")
+
+# convertir coordenadas de presencias a objetos espaciales (puntos):
+Gpyr_pts <- na.omit(Gpyr_coords)
+coordinates(Gpyr_pts) <- Gpyr_pts
+plot(Gpyr_pts)
+Clus_pts <- na.omit(Clus_coords)
+coordinates(Clus_pts) <- Clus_pts
+plot(Clus_pts)
+
+Gpyr_pts@proj4string@projargs  # NA, pero sabemos que son coordenadas geograficas (WGS84)
+Gpyr_pts@proj4string@projargs <- "+proj=longlat +datum=WGS84 +no_defs"
+Clus_pts@proj4string@projargs <- "+proj=longlat +datum=WGS84 +no_defs"
+
+# "overlay" para sacar las cuadriculas UTM que tienen puntos de presencia:
+Gpyr_cuadrics <- over(Gpyr_pts, cuadrics)
+head(Gpyr_cuadrics)
+nrow(Gpyr_cuadrics)  # 484
+Clus_cuadrics <- over(Clus_pts, cuadrics)
+head(Clus_cuadrics)
+nrow(Clus_cuadrics)  # 209
+
+# anadir datos de presencia/ausencia al mapa de cuadriculas cuadrics:
+head(cuadrics@data)  # tabla de atributos del mapa
+cuadrics@data$Galpyr <- 0  # anadir columna y llenarla con ceros
+cuadrics@data$Galpyr[cuadrics@data$COD10X10 %in% Gpyr_cuadrics$COD10X10] <- 1  # poner 1 donde hay puntos
+sum(cuadrics@data$Galpyr)  # 475 cuadriculas con presencia de Galemys
+cuadrics@data$Chilus <- 0
+cuadrics@data$Chilus[cuadrics@data$COD10X10 %in% Clus_cuadrics$COD10X10] <- 1
+sum(cuadrics@data$Chilus, na.rm = TRUE)  # 153 cuadriculas con presencia de Chioglossa
+
+# mapear para ver si todo esta' en su sitio:
+spplot(cuadrics, 
+       zcol = "Galpyr",
+       #xlim = extent(Gpyr_pts)[1:2],
+       #ylim = extent(Gpyr_pts)[3:4],
+       col = NA,  # color del borde de los poligonos
+       main = "Galemys")  # tarda un poco
+spplot(cuadrics, 
+       zcol = "Chilus",
+       #xlim = extent(Clus_pts)[1:2],
+       #ylim = extent(Clus_pts)[3:4],
+       col = NA,  # color del borde de los poligonos
+       main = "Chioglossa")  # tarda un poco
 
 
 #####################################
-### HACER MODELOS DE DISTRIBUCION ###
+### OBTENER VARIABLES AMBIENTALES ###
 #####################################
+
+# descargar datos de WorldClim (por ejemplo, a 2.5 minutos de resolucion):
+wclim_url <- "http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_2-5m_bil.zip"
+getwd()  # carpeta donde se va a descargar
+wclim_file <- "worldclim2-5m.zip"  # nombre que le vamos a dar al zip en la carpeta
+download.file(wclim_url, destfile = wclim_file)
+
+# convertir mapa cuadrics a raster, a la misma resolucion que las variables ambientales:
+# primero descomprimir e importar uno de los mapas de variables a R:
+unzip(wclim_file, list = TRUE)  # solo ver que nombres tienen los archivos dentro del zip
+unzip(wclim_file, files = c("bio1.bil", "bio1.hdr"))  # descomprimir el primer mapa (ambos archivos)
+wclim_bio1 <- raster("bio1.bil")
+plot(wclim_bio1, main = "WorldClim - bio1")  # parece bien
+
+library(raster)
+head(cuadrics@data)
+length(unique(cuadrics@data$COD10X10))  # 5604
+length(unique(cuadrics@data$OBJECTID))  # 5604 - se puede utilizar como identificador numerico
+cuadrics_rast <- rasterize(x = cuadrics,  # mapa vectorial a rasterizar
+                           y = wclim_bio1,  # mapa raster a utilizar como molde
+                           field = "OBJECTID")  # columna con los valores para el raster
+# (la rasterizacion tarda un rato)
+
+# pegar funcion "zonalFromZip" de https://modtools.wordpress.com/2014/11/28/zonal-from-zip
+# y utilizarla para sacar la media de cada variable por cuadricula:
+wclim_cuadrics <- zonalFromZip(zip.file = wclim_file,  # zip con las variables raster
+                               zones.rast = cuadrics_rast,  # mapa con las unidades geograficas
+                               fun = "mean",  # funcion para sacar las variables (en este caso, media por cuadricula)
+                               rast.file.ext = ".bil",  # extension de los archivos raster
+                               aux.file.ext = ".hdr")  # extension del archivo auxiliar
+# (el 'zonal' tambien tarda un rato)
+head(wclim_cuadrics)
+
+
+#############################################
+###     UNIR LAS VARIABLES AMBIENTALES    ### 
+###  CON LOS DATOS DE PRESENCIA/AUSENCIA  ###
+###      EN LAS UNIDADES GEOGRAFICAS      ###
+#############################################
+
+datos <- merge(cuadrics@data, 
+               wclim_cuadrics, 
+               by.x = "OBJECTID", 
+               by.y = "zone")
+nrow(cuadrics@data)  # 5604
+nrow(wclim_cuadrics)  # 5560
+nrow(datos)  # 5560
+head(datos)
+
+## anadir los datos al mapa de cuadriculas:
+names(datos)
+names(cuadrics@data)
+# aqui no utilizar merge, que los datos de shapefile se desordenan!! hacer asi:
+cuadrics@data <- data.frame(cuadrics@data, 
+                            datos[match(cuadrics@data$OBJECTID, datos$OBJECTID), ])
+head(cuadrics@data)
+
+# mirar si todo esta' en su sitio:
+spplot(cuadrics, 
+       zcol = "bio1", 
+       col = NA, 
+       main = "WorldClim - bio1 (Espana)")
+
+
+#######################################
+###  HACER MODELOS DE DISTRIBUCION  ###
+#######################################
 
 # instalar y cargar el paquete fuzzySim (disponible en R-Forge):
-install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
+if (!require(fuzzySim)) install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
 library(fuzzySim)
 
-# cargar y mirar los datos de ejemplo:
-data(rotif.env)
-head(rotif.env)
-names(rotif.env)
+names(datos)
 
-# hacer modelos para una o varias especies:
-rotif.mods <- multGLM(data = rotif.env, sp.cols = 18:47, var.cols = 5:17, id.col = 1)
+# analizar las correlaciones (multicolinealidad) entre variables y el factoer de inflaccion:
+?multicol
+multicol(vars = datos[ , 6:ncol(datos)])
 
-# mirar un modelo:
-summary(rotif.mods$models[[1]])
-summary(rotif.mods$models[["Abrigh"]])
+# analizar el "false discovery rate" (significacion corregida) para cada especie:
+?FDR
+names(datos)
+FDR(data = datos, sp.cols = 4, var.cols = 6:ncol(datos))
+FDR(data = datos, sp.cols = 5, var.cols = 6:ncol(datos))
 
-# mirar los valores predichos por los modelos:
-head(rotif.mods$predictions)
+head(datos)
 
-# ver opciones adicionales:
-help(multGLM)
-multGLM(data, sp.cols, var.cols, id.col = NULL, family = "binomial", test.sample = 0, FDR = FALSE, corSelect = FALSE, cor.thresh = 0.8, step = TRUE, trace = 0, start = "null.model", direction = "both", Y.prediction = FALSE, P.prediction = TRUE, Favourability = TRUE, group.preds = TRUE, trim = TRUE)
+# hacer modelos para una o mas especies:
+mod_Gpyr <- multGLM(data = na.omit(datos), 
+                    sp.cols = 4, 
+                    var.cols = 6:ncol(datos), 
+                    id.col = 1)
+mods <- multGLM(data = na.omit(datos),  # pero mirar que na.omit no excluya datos de algunas especies
+                sp.cols = 4:5, 
+                var.cols = 6:ncol(datos), 
+                id.col = 1)
 
+# mirar  la estructura del resultado:
+names(mod_Gpyr)
+names(mods)
+lapply(mod_Gpyr, head)
+lapply(mods, head)
+# la estructura es la misma, sea con una o mas especies
+
+rm(mod_Gpyr)
+
+
+# opciones adicionales de la funcion multGLM:
+names(datos)
+mods <- multGLM(data = na.omit(datos),  # mirar que na.omit no excluya datos de algunas especies
+                sp.cols = 4:5, 
+                var.cols = 6:ncol(datos), 
+                id.col = 1, 
+                family = "binomial", 
+                test.sample = 0,  # permite reservar datos para test
+                FDR = FALSE,  # permite seleccionar variables segun la "false discovery rate"
+                corSelect = FALSE,  # permite seleccionar variables segun sus correlaciones
+                cor.thresh = 0.8,  # define el umbral de correlacion permitido entre variables
+                step = TRUE,  # define si hacer seleccion de variables por pasos
+                start = "null.model",  # define si la seleccion empieza con el modelo nulo o saturado
+                direction = "both",   # define si los pasos van hacia delante, hacia atras o ambos
+                trim = TRUE)  # define si las variables no significativas deben ser retiradas
+# hay algunas opciones mas - ver help(multGLM)
+
+# mirar los resultados:
+names(mods$predictions)
+head(mods$predictions)
+names(mods$models)
+summary(mods$models[["Galpyr"]])
+summary(mods$models[["Chilus"]])
+
+## anadir los valores predichos al mapa de cuadriculas:
+names(cuadrics@data)
+names(mods$predictions)
+# no utilizar merge, que los datos de shapefile se desordenan!! hacer asi:
+cuadrics@data <- data.frame(cuadrics@data, 
+                            mods$predictions[match(cuadrics@data$OBJECTID, mods$predictions$OBJECTID), ])
+names(cuadrics@data)
+spplot(cuadrics, zcol = "Galpyr_F", col = NA, main = "Favorabilidad para Galemys")
+spplot(cuadrics, zcol = "Chilus_F", col = NA, main = "Favorabilidad para Chioglossa")
+# 'col' es el color de los bordes de los poligonos (NA = sin borde)
+# 'col.regions' es el color dentro de los poligonos
+# se puede hacer paletas variadas con 'RColorBrewer'
+
+# para evitar unir tablas a los mapas y hacer el mapeo mas rapido y sencillo,
+# utilizar el paquete 'cartography' (pero instala unos cuantos paquetes mas)
+
+
+#########################################
+###  EVALUAR MODELOS DE DISTRIBUCION  ###
+#########################################
+
+if (!require(modEvA)) install.packages("modEvA")
+library(modEvA)
+
+plotGLM(mods$models$Galpyr, main = "Galemys - modelo")
+plotGLM(mods$models$Chilus, main = "Chioglossa - modelo")
+
+AUC(mods$models$Galpyr, main = "Galemys - curva ROC")
+AUC(mods$models$Chilus, main = "Chioglossa - curva ROC")
+
+threshMeasures(mods$models$Galpyr, thresh = "preval", ylim = c(0, 1), main = "Galemys - medidas umbral")
+threshMeasures(mods$models$Chilus, thresh = "preval", ylim = c(0, 1), main = "Chioglossa - curva ROC")
+
+MillerCalib(mods$models$Galpyr, main = "Galemys - recta de Miller")
+MillerCalib(mods$models$Chilus, main = "Chioglossa - recta de Miller")
+
+HLfit(mods$models$Galpyr, bin.method = "n.bins", main = "Galemys - bondad de ajuste de H-L")
+HLfit(mods$models$Chilus, bin.method = "n.bins", main = "Chioglossa - bondad de ajuste de H-L")
