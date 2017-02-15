@@ -4,9 +4,13 @@
 
 # paquete para importar datos del GBIF:
 if (!require(rgbif)) install.packages("rgbif")
-library(rgbif)
+
+# si hay errores al instalar el paquete, pegarlos en un buscador de internet
+# para descubrir como solucionar el problema
+# en Linux, hay que tener instalados al menos 'libgeos-dev' y 'libv8-dev' en el sistema 
 
 # importar presencias de desman iberico:
+library(rgbif)
 Gpyr <- occ_data(scientificName = "Galemys pyrenaicus")
 names(Gpyr)
 str(Gpyr$data)
@@ -63,7 +67,7 @@ list.files("cuadriculas")
 
 if (!require(rgdal)) install.packages("rgdal")
 library(rgdal)
-cuadrics <- readOGR(dsn = "cuadrics", layer = "RiquezaEspecies")
+cuadrics <- readOGR(dsn = "cuadriculas", layer = "RiquezaEspecies")
 plot(cuadrics)
 #unlink("cuadriculas", recursive = TRUE)  # si se quiere borrar del disco la carpeta con el shapefile
 
@@ -137,10 +141,12 @@ download.file(wclim_url, destfile = wclim_file)
 # primero descomprimir e importar uno de los mapas de variables a R:
 unzip(wclim_file, list = TRUE)  # solo ver que nombres tienen los archivos dentro del zip
 unzip(wclim_file, files = c("bio1.bil", "bio1.hdr"))  # descomprimir el primer mapa (ambos archivos)
+
+if (!require(raster)) install.packages("raster")
+library(raster)
 wclim_bio1 <- raster("bio1.bil")
 plot(wclim_bio1, main = "WorldClim - bio1")  # parece bien
 
-library(raster)
 head(cuadrics@data)
 length(unique(cuadrics@data$COD10X10))  # 5604
 length(unique(cuadrics@data$OBJECTID))  # 5604 - se puede utilizar como identificador numerico
