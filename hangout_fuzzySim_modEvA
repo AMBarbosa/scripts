@@ -1,3 +1,5 @@
+## EN CONTRUCCION!! ##
+
 #####################################
 ### OBTENER DATOS DE DISTRIBUCION ###
 #####################################
@@ -5,8 +7,7 @@
 # paquete para importar datos del GBIF:
 if (!require(rgbif)) install.packages("rgbif")
 
-# si hay errores al instalar el paquete, pegarlos en un buscador de internet
-# para descubrir como solucionar el problema
+# si hay errores al instalar el paquete, pegarlos en un buscador de internet para descubrir como solucionar el problema
 # en Linux, hay que tener instalados al menos 'libgeos-dev' y 'libv8-dev' en el sistema
 
 # importar presencias de desman iberico:
@@ -14,12 +15,12 @@ library(rgbif)
 Galpyr_GBIF <- occ_data(scientificName = "Galemys pyrenaicus")
 sapply(Galpyr_GBIF, names)
 Galpyr_coords <- as.data.frame(na.omit(Galpyr_GBIF$data[ , c("decimalLongitude", "decimalLatitude")]))
-nrow(Galpyr_coords)  # 484
+nrow(Galpyr_coords)  # 484 (en el momento del download)
 
 # obtener presencias de salamandra lusitanica:
 Chilus_GBIF <- occ_data(scientificName = "Chioglossa lusitanica")
 Chilus_coords <- as.data.frame(na.omit(Chilus_GBIF$data[ , c("decimalLongitude", "decimalLatitude")]))
-nrow(Chilus_coords)  # 303
+nrow(Chilus_coords)  # 303 (en el momento del download)
 
 # mapear las presencias:
 if (!require(maps)) install.packages("maps")
@@ -34,13 +35,13 @@ map("world",
     ylim = range(Galpyr_coords[ , "decimalLatitude"], na.rm = T)
 )
 points(Galpyr_coords, col = "red", cex = 0.5)
-title("Galpyr")
+title("Galemys pyrenaicus")
 
 map("world",
     xlim = range(Chilus_coords[ , "decimalLongitude"], na.rm = T),
     ylim = range(Chilus_coords[ , "decimalLatitude"], na.rm = T)
 )
-points(Chilus_coords, col = "red", cex = 0.5)
+points(Chilus_coords, col = "blue", cex = 0.5)
 title("Chilus")
 
 
@@ -51,9 +52,9 @@ title("Chilus")
 erroneous <- which(Chilus_coords[ , "decimalLatitude"] == 0)
 Chilus_coords[erroneous, ]
 Chilus_coords <- Chilus_coords[-erroneous, ]
+nrow(Chilus_coords)  # 302 (una menos)
 
-
-# los datos solo estan minimamente completos en Espana (en GBIF, pero hay otras fuentes!) -> restringir el area de estudio
+# los datos solo estan minimamente completos en Espana (en GBIF, pero hay otras fuentes!) -> restringir el area de estudio si no tenemos mejores datos
 
 # los "puntos de presencia" son demasiado regulares: centroides de cuadriculas! (en este caso, UTM 10x10 km) -> utilizarlas como unidad de analisis
 
@@ -78,12 +79,17 @@ list.files("cuadriculas")
 if (!require(rgdal)) install.packages("rgdal")
 library(rgdal)
 cuadrics <- readOGR(dsn = "cuadriculas", layer = "RiquezaEspecies")
+par(mar = c(1, 1, 1, 1))
 plot(cuadrics, border = "grey")
-str(cuadrics@data)
-cuadrics@data$OBJECTID <- as.integer(cuadrics@data$OBJECTID)
+# deberiamos excluir las islas...
+
+head(cuadrics)
+
+
 #unlink("cuadriculas", recursive = TRUE)  # si se quiere borrar del disco la carpeta con el shapefile
 
-# consultar proyeccion geografica:
+
+# consultar la proyeccion geografica:
 cuadrics@proj4string@projargs  # "+proj=longlat +ellps=GRS80 +no_defs"
 
 # convertir a coordenadas geograficas, como nuestras presencias:
@@ -109,17 +115,17 @@ Chilus_pts@proj4string@projargs <- "+proj=longlat +datum=WGS84 +no_defs"
 
 # "overlay" para sacar las cuadriculas UTM que tienen puntos de presencia:
 Galpyr_cuadrics <- over(Galpyr_pts, cuadrics)
-head(Galpyr_cuadrics)
+head(Galpyr_cuadrics)  # algunos NA
 nrow(Galpyr_cuadrics)  # 484
-nrow(Galpyr_cuadrics[!is.na(Galpyr_cuadrics$COD10X10), ])  # 481
+nrow(na.omit(Galpyr_cuadrics))  # 481
 # se han "perdido" 3 puntos, que caen fuera de las cuadriculas de estudio:
 plot(cuadrics, border = "grey")
 points(Galpyr_coords, cex = 0.5, col = "red")
 
 Chilus_cuadrics <- over(Chilus_pts, cuadrics)
-head(Chilus_cuadrics)
+head(Chilus_cuadrics)  # algunos NA
 nrow(Chilus_cuadrics)  # 302
-nrow(Chilus_cuadrics[!is.na(Chilus_cuadrics$COD10X10), ])  # 266
+nrow(na.omit(Chilus_cuadrics))  # 266
 plot(cuadrics, border = "grey")
 points(Chilus_coords, cex = 0.5, col = "blue")
 
@@ -136,11 +142,11 @@ sum(cuadrics@data$Chilus, na.rm = TRUE)  # 161 cuadriculas con presencia de Chio
 spplot(cuadrics,
        zcol = "Galpyr",
        col = NA,  # color del borde de los poligonos
-       main = "Galemys")  # (tarda un poco)
+       main = "Galpyr")  # (tarda un poco)
 spplot(cuadrics,
        zcol = "Chilus",
        col = NA,  # color del borde de los poligonos
-       main = "Chioglossa")  # (tarda un poco)
+       main = "Chilus")  # (tarda un poco)
 
 
 #####################################
@@ -151,9 +157,11 @@ spplot(cuadrics,
 wclim_url <- "http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_2-5m_bil.zip"
 getwd()  # carpeta donde se va a descargar (se puede cambiar con 'setwd')
 wclim_file <- "worldclim2-5m.zip"  # nombre que le vamos a dar al zip en la carpeta
-download.file(wclim_url, destfile = wclim_file)  # (puede tardar bastante)
+#download.file(wclim_url, destfile = wclim_file)  # (puede tardar BASTANTE!)
+
 
 # convertir mapa cuadrics a raster, a la misma resolucion que las variables ambientales:
+
 # primero descomprimir e importar uno de los mapas de variables a R:
 unzip(wclim_file, list = TRUE)  # solo ver que nombres tienen los archivos dentro del zip
 unzip(wclim_file, files = c("bio1.bil", "bio1.hdr"))  # descomprimir el primer mapa (ambos archivos)
@@ -165,13 +173,16 @@ plot(wclim_bio1, main = "WorldClim - bio1")  # parece bien
 
 head(cuadrics@data)
 length(unique(cuadrics@data$COD10X10))  # 5604
-length(unique(cuadrics@data$OBJECTID))  # 5604 - se puede utilizar como identificador numerico
+length(unique(cuadrics@data$OBJECTID))  # 5604 - se puede utilizar como identificador unico
+str(cuadrics@data)  # 'OBJECTID' tiene classe 'factor'; convertir a numero entero:
+cuadrics@data$OBJECTID <- as.integer(cuadrics@data$OBJECTID)
+
 cuadrics_rast <- rasterize(x = cuadrics,  # mapa vectorial a rasterizar
                            y = wclim_bio1,  # mapa raster a utilizar como molde
-                           field = "OBJECTID"  # columna con los valores para el raster
-                           )
+                           field = "OBJECTID")  # columna con los valores para el raster
 # (la rasterizacion tarda un rato)
 plot(cuadrics_rast)
+plot(cuadrics_rast, xlim = c(-24, 6), ylim = c(26, 45))
 
 
 # pegar funcion "zonalFromZip" de https://modtools.wordpress.com/2014/11/28/zonal-from-zip
@@ -185,7 +196,6 @@ wclim_cuadrics <- zonalFromZip(zip.file = wclim_file,  # zip con las variables r
 # (el 'zonal' tambien tarda un buen rato)
 
 head(wclim_cuadrics)
-str(wclim_cuadrics)
 
 #unlink(wclim_file)  # si se quiere borrar el zip del disco
 #unlink(c("bio1.bil", "bio1.hdr"))  # si se quiere borrar el mapa raster descomprimido
@@ -197,14 +207,17 @@ str(wclim_cuadrics)
 ###      EN LAS UNIDADES GEOGRAFICAS      ###
 #############################################
 
+names(cuadrics@data)  # tabla de atributos del mapa de cuadriculas
+names(wclim_cuadrics)  # tabla de 'zonal statistics' de nuestras variables
 datos <- merge(cuadrics@data,
                wclim_cuadrics,
                by.x = "OBJECTID",
                by.y = "zone")
 nrow(cuadrics@data)  # 5604
 nrow(wclim_cuadrics)  # 5560
-nrow(datos)  # 5560
 head(datos)
+nrow(datos)  # 5560
+nrow(unique(datos))
 
 ## anadir los datos al mapa de cuadriculas:
 names(datos)
@@ -213,12 +226,18 @@ names(cuadrics@data)
 cuadrics@data <- data.frame(cuadrics@data,
                             datos[match(cuadrics@data$OBJECTID, datos$OBJECTID), ])
 head(cuadrics@data)
+nrow(cuadrics@data)  # 5604
+nrow(unique(cuadrics@data))  # 5604
 
 # mirar si todo esta' en su sitio:
 spplot(cuadrics,
-       zcol = "bio1",
-       col = NA,
-       main = "WorldClim - bio1 (Espana)")
+       zcol = "bio1",  # columna con los datos a mapear
+       col = NA,  # color del borde de las cuadriculas
+       main = "WorldClim - bio1")  # titulo
+
+# para evitar unir tablas a los mapas (potencialmente peligroso)
+# y representar los mapas de forma mas rapida y sencilla,
+# utilizar el paquete 'cartography' (pero instala unos cuantos paquetes mas)
 
 
 #######################################
@@ -229,11 +248,10 @@ spplot(cuadrics,
 if (!require(fuzzySim)) install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
 library(fuzzySim)
 
-names(datos)
 
-# analizar las correlaciones (multicolinealidad) entre variables y el factoer de inflaccion:
-?multicol
-multicol(vars = datos[ , 6:ncol(datos)])
+## SELECCION DE VARIABLES ##
+
+names(datos)
 
 # analizar el "false discovery rate" (significacion corregida) para cada especie:
 ?FDR
@@ -241,76 +259,91 @@ names(datos)
 FDR(data = datos, sp.cols = 4, var.cols = 6:ncol(datos))
 FDR(data = datos, sp.cols = 5, var.cols = 6:ncol(datos))
 
-head(datos)
+# analizar las correlaciones (multicolinealidad) entre variables y el factor de inflaccion:
+?multicol
+multicol(datos[ , 6:ncol(datos)])
+
+# analizar las correlaciones entre pares de variables:
+?cor
+corrs <- cor(datos[ , 6:ncol(datos)], use = "pairwise")
+corrs
+round(corrs, 3)
+
+# analizar las correlaciones combinadas con la significacion o informacion:
+?corSelect
+corSelect(data = datos, var.cols = 6:ncol(datos))
+corSelect(data = datos, sp.cols = 4, var.cols = 6:ncol(datos))
+corSelect(data = datos, sp.cols = 5, var.cols = 6:ncol(datos))
+
 
 # hacer modelos para una o mas especies:
 mod_Galpyr <- multGLM(data = na.omit(datos),
-                    sp.cols = 4,
-                    var.cols = 6:ncol(datos),
-                    id.col = 1)
-mods <- multGLM(data = na.omit(datos),  # pero mirar que na.omit no excluya datos de algunas especies
+                      sp.cols = 4,
+                      var.cols = 6:ncol(datos),
+                      id.col = 1)
+mods_1 <- multGLM(data = na.omit(datos),  # pero mirar que na.omit no excluya datos de algunas especies
                 sp.cols = 4:5,
                 var.cols = 6:ncol(datos),
                 id.col = 1)
 
 # mirar  la estructura del resultado:
 names(mod_Galpyr)
-names(mods)
+names(mods_1)
 lapply(mod_Galpyr, head)
-lapply(mods, head)
+lapply(mods_1, head)
 # la estructura es la misma, sea con una o mas especies
-
-rm(mod_Galpyr)
-
 
 # opciones adicionales de la funcion multGLM:
 names(datos)
-mods <- multGLM(data = na.omit(datos),
+mods_2 <- multGLM(data = na.omit(datos),
                 sp.cols = 4:5,
                 var.cols = 6:ncol(datos),
                 id.col = 1,
                 family = "binomial",
-                test.sample = 0,  # permite reservar datos para test
-                FDR = FALSE,  # permite seleccionar variables segun la "false discovery rate"
-                corSelect = FALSE,  # permite seleccionar variables segun sus correlaciones
+                test.sample = 0.15,  # permite reservar datos para test
+                FDR = TRUE,  # permite seleccionar variables segun la "false discovery rate"
+                corSelect = TRUE,  # permite seleccionar variables segun sus correlaciones
                 cor.thresh = 0.8,  # define el umbral de correlacion permitido entre variables
                 step = TRUE,  # define si hacer seleccion de variables por pasos
-                start = "null.model",  # define si la seleccion empieza con el modelo nulo o saturado
+                start = "full.model",  # define si la seleccion empieza con el modelo nulo o saturado
                 direction = "both",   # define si los pasos van hacia delante, hacia atras o ambos
                 trim = TRUE)  # define si las variables no significativas deben ser retiradas
 # hay algunas opciones mas - ver help(multGLM)
 
 # mirar los resultados:
-names(mods$predictions)
-head(mods$predictions)
-names(mods$models)
-summary(mods$models[["Galpyr"]])
-summary(mods$models[["Chilus"]])
+names(mods_1$predictions)
+names(mods_2$predictions)  # nueva columna "sample"
+head(mods_2$predictions)
+names(mods_2$models)
+summary(mods_2$models[["Galpyr"]])
+summary(mods_2$models[["Chilus"]])
+
+# recuerden que la estructura del objeto es la misma aunque se haya modelado una sola especie
 
 
-## anadir los valores predichos al mapa de cuadriculas:
+## anadir los valores predichos a nuestra tabla de datos:
+
+names(datos)
+names(mods_2$predictions)
+datos <- merge(datos, mods_2$predictions, all.x = TRUE)
+nrow(datos)
 
 names(cuadrics@data)
-names(mods$predictions)
+names(mods_2$predictions)
 # no utilizar merge, que los datos de shapefile se desordenan!! hacer asi:
 cuadrics@data <- data.frame(cuadrics@data,
-                            mods$predictions[match(cuadrics@data$OBJECTID, mods$predictions$OBJECTID), ])
+                            mods_2$predictions[match(cuadrics@data$OBJECTID, mods_2$predictions$OBJECTID), ])
 names(cuadrics@data)
 
 
 # visualizar (mapear) los valores predichos:
 
 spplot(cuadrics, zcol = "Galpyr_F", col = NA, main = "Favorabilidad para Galemys")
-points(Galpyr_pts, col = "red")
 
 spplot(cuadrics, zcol = "Chilus_F", col = NA, main = "Favorabilidad para Chioglossa")
 # 'col' es el color de los bordes de los poligonos (NA = sin borde)
 # 'col.regions' es el color dentro de los poligonos
 # se puede hacer paletas variadas con 'RColorBrewer'
-
-# para evitar unir tablas a los mapas (potencialmente peligroso)
-# y representar los mapas de forma mas rapida y sencilla,
-# utilizar el paquete 'cartography' (pero instala unos cuantos paquetes mas)
 
 
 #########################################
@@ -321,45 +354,74 @@ if (!require(modEvA)) install.packages("modEvA")
 library(modEvA)
 
 # visualizar las predicciones del modelo frente a los datos observados:
-plotGLM(mods$models$Galpyr, main = "Galemys - modelo")
-plotGLM(mods$models$Chilus, main = "Chioglossa - modelo")
+par(mfrow = c(2, 1), mar = c(5, 4, 3, 2))
+plotGLM(model = mods_2$models$Galpyr, main = "Galpyr - modelo")
+plotGLM(model = mods_2$models$Chilus, main = "Chilus - modelo")
 
 # visualizar la curva ROC y calcular el AUC:
-AUC(mods$models$Galpyr, main = "Galemys - curva ROC")
-AUC(mods$models$Chilus, main = "Chioglossa - curva ROC")
+?AUC
+AUC(model = mods_2$models$Galpyr, main = "Galpyr - curva ROC")
+AUC(model = mods_2$models$Chilus, main = "Chilus - curva ROC")
 
 # calcular medidas basadas en un umbral de clasificacion:
-threshMeasures(mods$models$Galpyr, thresh = "preval", ylim = c(0, 1), main = "Galemys - medidas umbral")
-threshMeasures(mods$models$Chilus, thresh = "preval", ylim = c(0, 1), main = "Chioglossa - curva ROC")
+?threshMeasures
+threshMeasures(model = mods_2$models$Galpyr, thresh = "preval", ylim = c(0, 1), main = "Galpyr - medidas umbral")
+threshMeasures(model = mods_2$models$Chilus, thresh = "preval", ylim = c(0, 1), main = "Chilus - medidas umbral")
 
 # calcular umbrales de clasificacion que optimizan distintas medidas:
-optiThresh(mods$models$Galpyr, pch = 20)
-optiThresh(mods$models$Chilus, pch = 20)
+?optiThresh
+optiThresh(model = mods_2$models$Galpyr, pch = 20)
+title("Galpyr", outer = TRUE)
+optiThresh(model = mods_2$models$Chilus, pch = 20)
+title("Chilus", outer = TRUE)
 
 # calcular umbrales de clasificacion que optimizan el equilibrio entre pares de medidas:
-optiPair(mods$models$Galpyr, measures = c("Sensitivity", "Specificity"), main = "Optimal balance")
-optiPair(mmods$models$Chilus, measures = c("Sensitivity", "Specificity"), main = "Optimal balance")
+?optiPair
+optiPair(model = mods_2$models$Galpyr, measures = c("Sensitivity", "Specificity"), main = "Galpyr - optimal balance")
+optiPair(model = mods_2$models$Chilus, measures = c("Sensitivity", "Specificity"), main = "Chilus - optimal balance")
 
 # calcular la devianza explicada:
-Dsquared(model = mods$models$Galpyr)
-Dsquared(model = mods$models$Chilus)
+?Dsquared
+Dsquared(model = mods_2$models$Galpyr)
+Dsquared(model = mods_2$models$Galpyr, adj = TRUE)
+Dsquared(model = mods_2$models$Chilus)
+Dsquared(model = mods_2$models$Chilus, adj = TRUE)
 
 # calcular los pseudo-R-cuadrados:
-RsqGLM(model = mods$models$Galpyr)
-RsqGLM(model = mods$models$Chilus)
-barplot(unlist(RsqGLM(model = mods$models$Galpyr)), ylim = c(0, 1), las = 2)
-barplot(unlist(RsqGLM(model = mods$models$Chilus)), ylim = c(0, 1), las = 2)
+?RsqGLM
+RsqGLM(model = mods_2$models$Galpyr)
+RsqGLM(model = mods_2$models$Chilus)
+barplot(unlist(RsqGLM(model = mods_2$models$Galpyr)), ylim = c(0, 1), las = 2, main = "Galpyr - pseudo R cuadrados")
+barplot(unlist(RsqGLM(model = mods_2$models$Chilus)), ylim = c(0, 1), las = 2, main = "Chilus - pseudo R cuadrados")
 
-# analizar la recta de calibracion de Miller (util solo para extrapolacion):
-MillerCalib(mods$models$Galpyr, main = "Galemys - recta de Miller")
-MillerCalib(mods$models$Chilus, main = "Chioglossa - recta de Miller")
+# analizar la recta de calibracion de Miller
+# (util solo para modelos extrapolados):
+?MillerCalib
+MillerCalib(model = mods_2$models$Galpyr, main = "Galpyr - recta de Miller")
+MillerCalib(model = mods_2$models$Chilus, main = "Chilus - recta de Miller")
+# cuando se da a estas funciones el argumento 'model', utilizan solo los datos incluidos en el modelo (training)
+# si queremos evaluar sobre los datos de test, o sobre todo el area de estudio
+# tenemos que darles los argumentos 'obs' y 'pred' que contengan los datos de interes:
+
+train_data <- datos[datos$sample == "train", ]
+test_data <- datos[datos$sample == "test", ]
+head(train_data)
+head(test_data)
+nrow(train_data)  # 4779
+nrow(test_data)  # 928
+
+
+MillerCalib(obs = datos$Galpyr, pred = datos$Galpyr_P, main = "Galpyr - recta de Miller (test)")
+MillerCalib(obs = datos$Chilus, pred = datos$Chilus_P, main = "Chilus - recta de Miller (test)")
+
 
 # analizar la bondad de ajuste de Hosmer-Lemeshow (atencion, que cambia con los bins!):
-HLfit(mods$models$Galpyr, bin.method = "n.bins", main = "Galemys - bondad de ajuste de H-L")
-HLfit(mods$models$Galpyr, bin.method = "quantiles", main = "Galemys - bondad de ajuste de H-L")
-HLfit(mods$models$Chilus, bin.method = "n.bins", main = "Chioglossa - bondad de ajuste de H-L")
-HLfit(mods$models$Chilus, bin.method = "quantiles", main = "Chioglossa - bondad de ajuste de H-L")
+?HLfit
+HLfit(mods_2$models$Galpyr, bin.method = "n.bins", main = "Galpyr - bondad de ajuste de H-L (N bins)")
+HLfit(mods_2$models$Galpyr, bin.method = "quantiles", main = "Galpyr - bondad de ajuste de H-L (quantiles)")
+HLfit(mods_2$models$Chilus, bin.method = "n.bins", main = "Chilus - bondad de ajuste de H-L (N bins)")
+HLfit(mods_2$models$Chilus, bin.method = "quantiles", main = "Chilus - bondad de ajuste de H-L (quantiles)")
 
 # evaluar varios modelos a la vez:
-model_eval <- multModEv(models = mods$models, thresh = "preval", bin.method = "quantiles")
+model_eval <- multModEv(models = mods_2$models, thresh = "preval", bin.method = "quantiles")
 model_eval
