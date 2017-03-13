@@ -259,16 +259,13 @@ choroLayer(spdf = cuadrics,  # mapa
            border = NA)  # color del borde de los poligonos
 
 
-#######################################
-###  HACER MODELOS DE DISTRIBUCION  ###
-#######################################
+################################
+###  SELECCION DE VARIABLES  ###
+################################
 
 # instalar y cargar el paquete fuzzySim (disponible en R-Forge):
 if (!require(fuzzySim)) install.packages("fuzzySim", repos = "http://R-Forge.R-project.org")
 library(fuzzySim)
-
-
-## SELECCION DE VARIABLES ##
 
 names(datos)
 head(datos)
@@ -294,6 +291,10 @@ corSelect(data = datos, var.cols = 6:ncol(datos), cor.thresh = 0.8, use = "pairw
 corSelect(data = datos, sp.cols = 4, var.cols = 6:ncol(datos), cor.thresh = 0.8, use = "pairwise.complete.obs")
 corSelect(data = datos, sp.cols = 5, var.cols = 6:ncol(datos), cor.thresh = 0.8, use = "pairwise.complete.obs")
 
+
+#################################################
+###  CONSTRUCCION DE MODELOS DE DISTRIBUCION  ###
+#################################################
 
 # hacer modelos para una o mas especies:
 names(datos)
@@ -459,9 +460,9 @@ model_eval <- multModEv(models = mods_2$models, thresh = "preval", bin.method = 
 model_eval
 
 
-################################
-## OPERACIONES ENTRE MODELOS  ##
-################################
+###################################
+###  OPERACIONES ENTRE MODELOS  ###
+###################################
 
 # similitud de distribuciones (observadas o potenciales):
 ?fuzSim
@@ -482,6 +483,10 @@ with(datos, modOverlap(Galpyr_F, Chilus_F, na.rm = TRUE))
 ?fuzzyRangeChange
 
 
+######################################################
+###  MODELOS PURAMENTE ESPACIALES (MODELOS NULOS)  ###
+######################################################
+
 # trend surface analysis:
 ?multTSA  # hacen falta las coordenadas espaciales
 names(datos)  # aqui no las tenemos
@@ -497,7 +502,7 @@ names(TSA)
 datos <- merge(datos, TSA, all.x = TRUE)
 
 # mapear las TSA:
-par(mfrow = c(2, 1))
+par(mfrow = c(2, 1), mar = c(1, 1, 1, 1))
 choroLayer(spdf = cuadrics, df = datos, spdfid = "OBJECTID", dfid = "OBJECTID", var = "Galpyr_TS", border = NA)
 choroLayer(spdf = cuadrics, df = datos, spdfid = "OBJECTID", dfid = "OBJECTID", var = "Chilus_TS", border = NA)
 
@@ -515,6 +520,7 @@ head(dist_interpol)
 datos <- merge(datos, dist_interpol, all.x = TRUE)
 
 # mapear la distancia a presencia:
-par(mfrow = c(2, 1))
+par(mfrow = c(2, 1), mar = c(1, 1, 1, 1))
 choroLayer(spdf = cuadrics, df = datos, spdfid = "OBJECTID", dfid = "OBJECTID", var = "Galpyr_D", border = NA)
 choroLayer(spdf = cuadrics, df = datos, spdfid = "OBJECTID", dfid = "OBJECTID", var = "Chilus_D", border = NA)
+
