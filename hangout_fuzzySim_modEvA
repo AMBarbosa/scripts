@@ -365,9 +365,9 @@ choroLayer(spdf = cuadrics,  # mapa
 title("Chilus - Favorabilidad")
 
 
-#########################################
-###  EVALUAR MODELOS DE DISTRIBUCION  ###
-#########################################
+###################################
+###  EVALUACION DE LOS MODELOS  ###
+###################################
 
 if (!require(modEvA)) install.packages("modEvA")
 library(modEvA)
@@ -384,16 +384,12 @@ AUC(model = mods_2$models$Galpyr, main = "Galpyr - curva ROC")
 AUC(model = mods_2$models$Chilus, main = "Chilus - curva ROC")
 
 # al darle el argumento 'model', solo considera lo datos incluidos en la construccion del modelo (datos de entrenamiento)
-# si queremos evaluar con los datos de test o con todos los datos, se los damos en los argumentos 'obs' y 'pred':
+# si queremos evaluar con los datos de test (o con otros datos), se los damos en los argumentos 'obs' y 'pred':
 
 datos_entrenam <- datos[datos$sample == "train", ]
 datos_test <- datos[datos$sample == "test", ]
-
 head(datos_entrenam)
 head(datos_test)
-nrow(datos_entrenam)  # 4735
-nrow(datos_test)  # 884
-nrow(datos)
 
 par(mfrow = c(2, 2))
 with(datos_entrenam, AUC(obs = Galpyr, pred = Galpyr_P, main = "Galpyr - curva ROC (datos modelo)"))
@@ -490,13 +486,13 @@ with(datos, modOverlap(Galpyr_F, Chilus_F, na.rm = TRUE))
 # trend surface analysis:
 ?multTSA  # hacen falta las coordenadas espaciales
 names(datos)  # aqui no las tenemos
-names(cuadrics@data)  # pero de aqui podemos calcularlas, porque es un objeto espacial:
+names(cuadrics@data)  # pero de aqui podemos calcularlas, porque es un objeto espacial, y anadirlas a la tabla de atributos:
 cuadrics@data[ , c("x", "y")] <- coordinates(cuadrics)
 
-TSA <- multTSA(data = cuadrics@data,  # pero mirar que na.omit no excluya datos de algunas especies
-                  sp.cols = 4:5,
-                  coord.cols = c("x", "y"),
-                  id.col = 1)
+TSA <- multTSA(data = cuadrics@data,
+               sp.cols = 4:5,
+               coord.cols = c("x", "y"),
+               id.col = 1)
 names(TSA)
 
 datos <- merge(datos, TSA, all.x = TRUE)
