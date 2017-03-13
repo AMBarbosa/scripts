@@ -271,6 +271,7 @@ library(fuzzySim)
 ## SELECCION DE VARIABLES ##
 
 names(datos)
+head(datos)
 
 # analizar el "false discovery rate" (significacion corregida) para cada especie:
 ?FDR
@@ -280,15 +281,13 @@ FDR(data = datos, sp.cols = 5, var.cols = 6:ncol(datos))
 
 # analizar las correlaciones (multicolinealidad) entre variables y el factor de inflaccion:
 ?multicol
-multicol(datos[ , 6:ncol(datos)])
+multicol(datos[ , 6:ncol(datos)])  # especificar solo las columnas con variables!
 
 # analizar las correlaciones entre pares de variables:
 ?cor
-corrs <- cor(datos[ , 6:ncol(datos)], use = "pairwise.complete.obs")
-corrs
-round(corrs, 3)
+cor(datos[ , 6:ncol(datos)], use = "pairwise.complete.obs")
 
-# analizar las correlaciones combinadas con la significacion o informacion:
+# analizar las correlaciones de dos en dos, y combinadas con la significacion sobre la especie:
 ?corSelect
 names(datos)
 corSelect(data = datos, var.cols = 6:ncol(datos), cor.thresh = 0.8, use = "pairwise.complete.obs")
@@ -321,7 +320,7 @@ mods_2 <- multGLM(data = na.omit(datos),
                   test.sample = 0.15,  # permite reservar datos para test
                   FDR = TRUE,  # permite seleccionar variables segun la "false discovery rate"
                   corSelect = TRUE,  # permite seleccionar variables segun sus correlaciones
-                  cor.thresh = 0.8,  # define el umbral de correlacion permitido entre variables
+                  cor.thresh = 0.75,  # define el umbral de correlacion permitido entre variables
                   step = TRUE,  # define si hacer seleccion de variables por pasos
                   start = "full.model",  # define si la seleccion empieza con el modelo nulo o saturado
                   direction = "both",   # define si los pasos van hacia delante, hacia atras o ambos
@@ -401,21 +400,22 @@ with(datos_test, AUC(obs = Galpyr, pred = Galpyr_P, main = "Galpyr - curva ROC (
 with(datos_entrenam, AUC(obs = Chilus, pred = Chilus_P, main = "Chilus - curva ROC (datos modelo)"))
 with(datos_test, AUC(obs = Chilus, pred = Chilus_P, main = "Chilus - curva ROC (datos test)"))
 
-
 # calcular medidas basadas en un umbral de clasificacion:
 ?threshMeasures
 par(mfrow = c(2, 2))
-with(datos_entrenam, threshMeasures(obs = Galpyr, pred = Galpyr_P, thresh = "preval", ylim = c(0, 1), main = "Galpyr - medidas umbral (datos modelo)"))
-with(datos_test, threshMeasures(obs = Galpyr, pred = Galpyr_P, thresh = "preval", ylim = c(0, 1), main = "Galpyr - medidas umbral (datos test)"))
-with(datos_entrenam, threshMeasures(obs = Chilus, pred = Chilus_P, thresh = "preval", ylim = c(0, 1), main = "Chilus - medidas umbral (datos modelo)"))
-with(datos_test, threshMeasures(obs = Chilus, pred = Chilus_P, thresh = "preval", ylim = c(0, 1), main = "Chilus - medidas umbral (datos test)"))
+with(datos_entrenam, threshMeasures(obs = Galpyr, pred = Galpyr_P, thresh = "preval", measures = c("CCR", "Sensitivity", "Specificity", "TSS", "kappa"), ylim = c(0, 1), main = "Galpyr - medidas umbral (datos modelo)"))
+with(datos_test, threshMeasures(obs = Galpyr, pred = Galpyr_P, thresh = "preval", measures = c("CCR", "Sensitivity", "Specificity", "TSS", "kappa"), ylim = c(0, 1), main = "Galpyr - medidas umbral (datos test)"))
+with(datos_entrenam, threshMeasures(obs = Chilus, pred = Chilus_P, thresh = "preval", measures = c("CCR", "Sensitivity", "Specificity", "TSS", "kappa"), ylim = c(0, 1), main = "Chilus - medidas umbral (datos modelo)"))
+with(datos_test, threshMeasures(obs = Chilus, pred = Chilus_P, thresh = "preval", measures = c("CCR", "Sensitivity", "Specificity", "TSS", "kappa"), ylim = c(0, 1), main = "Chilus - medidas umbral (datos test)"))
+
 
 # calcular umbrales de clasificacion que optimizan distintas medidas:
 ?optiThresh
-with(datos_entrenam, optiThresh(obs = Galpyr, pred = Galpyr_P, pch = 20))
+with(datos_entrenam, optiThresh(obs = Galpyr, pred = Galpyr_P, pch = 20, measures = c("CCR", "TSS", "kappa")))
 title("Galpyr", outer = TRUE)
-with(datos_entrenam, optiThresh(obs = Chilus, pred = Chilus_P, pch = 20))
+with(datos_entrenam, optiThresh(obs = Chilus, pred = Chilus_P, pch = 20, measures = c("CCR", "TSS", "kappa")))
 title("Chilus", outer = TRUE)
+
 
 # calcular umbrales de clasificacion que optimizan el equilibrio entre pares de medidas:
 ?optiPair
