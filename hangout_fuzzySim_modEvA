@@ -1,5 +1,13 @@
+## R script del seminario / hangout:
+
+## Seleccion de variables, construccion y evaluacion 
+## de modelos de distribucion de especies 
+## con los paquetes R 'fuzzySim' y 'modEvA'
+
 ## [actualizado 13 marzo 2017] ##
+
 ## dudas y bugs: barbosa@uevora.pt (contestare' segun pueda)
+
 
 #####################################
 ### OBTENER DATOS DE DISTRIBUCION ###
