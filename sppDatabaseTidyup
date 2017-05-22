@@ -14,9 +14,9 @@ atlas$ESPECIE <- as.character(atlas$ESPECIE)
 sort(unique(atlas$ESPECIE))
 # (si hay especies de mas, corregir la tabla original)
 
-# eliminar espacios al final de nombres de especies y cuadriculas:
-atlas$ESPECIE <- sub(" +$", "", atlas$ESPECIE)
-atlas$CUTM10 <- sub(" +$", "", atlas$CUTM10)
+# eliminar espacios al principio y/o al final de nombres de especies y cuadriculas:
+atlas$ESPECIE <- sub("^\\s+|\\s+$", "", atlas$ESPECIE)
+atlas$CUTM10 <- sub("^\\s+|\\s+$", "", atlas$CUTM10)
 
 # eliminar dobles espacios en el nombre de las especies:
 atlas$ESPECIE <- gsub("  ", " ", atlas$ESPECIE)
