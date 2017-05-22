@@ -23,6 +23,11 @@ atlas$CUTM10 <- sub("^\\s+|\\s+$", "", atlas$CUTM10)
 # eliminar dobles espacios en el nombre de las especies:
 atlas$ESPECIE <- gsub("  ", " ", atlas$ESPECIE)
 
+# ir confiriendo si aun hay casos de una misma especie o cuadricula 
+# escrita de formas distintas:
+sort(unique(atlas$ESPECIE))
+
+
 # anadir columna con los codigos de especie (4+4 letras):
 separados <- strsplit(atlas$ESPECIE, " ")
 gen <- sp <- vector("character", length(separados))
