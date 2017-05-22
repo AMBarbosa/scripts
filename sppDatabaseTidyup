@@ -17,11 +17,12 @@ sort(unique(atlas$ESPECIE))
 # eliminar espacios al principio y/o al final de nombres de especies y cuadriculas:
 atlas$ESPECIE <- sub("^\\s+|\\s+$", "", atlas$ESPECIE)
 atlas$CUTM10 <- sub("^\\s+|\\s+$", "", atlas$CUTM10)
-# (si hay mas de un espacio por registro, puede ser necesario
-# repetir estos comandos hasta eliminarlos todos)
+# (si hay mas de un espacio erroneo por cada registro, puede ser necesario
+# repetir estos comandos hasta eliminar todos los espacios erroneos)
 
 # eliminar dobles espacios en el nombre de las especies:
 atlas$ESPECIE <- gsub("  ", " ", atlas$ESPECIE)
+# tambien puede ser necesario repetir
 
 # ir confiriendo si aun hay casos de una misma especie o cuadricula 
 # escrita de formas distintas:
