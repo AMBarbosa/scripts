@@ -3,8 +3,9 @@
 ## Seleccion de variables, construccion y evaluacion 
 ## de modelos de distribucion de especies 
 ## con los paquetes R 'fuzzySim' y 'modEvA'
+## [https://www.youtube.com/watch?v=uo0kgxOd_fM]
 
-## [actualizado 13 marzo 2017] ##
+## [actualizado 13 octubre 2018] ##
 
 ## A. Marcia Barbosa
 ## CIBIO/InBIO - Universidade de Evora (Portugal)
@@ -87,7 +88,8 @@ title("Chilus")
 # citar FUENTE: Ministerio de Agricultura y Pesca, Alimentacion y Medio Ambiente (Espana)
 # disponible en "Inventario Nacional de Especies Terrestres", MAGRAMA (URL puede cambiar!)
 
-cuadrics_url <- "http://www.mapama.gob.es/es/cartografia-y-sig/ide/descargas/biodiversidad/riqueza-especies_tcm7-439214.zip"
+#cuadrics_url <- "http://www.mapama.gob.es/es/cartografia-y-sig/ide/descargas/biodiversidad/riqueza-especies_tcm7-439214.zip" # deprecated link
+cuadrics_url <- "https://www.miteco.gob.es/es/cartografia-y-sig/ide/descargas/riqueza-especies_tcm30-176385.zip"
 getwd()  # carpeta donde se va a descargar
 download.file(cuadrics_url, destfile = "cuadrics.zip")
 unzip("cuadrics.zip", exdir = "cuadriculas")
