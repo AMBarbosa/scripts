@@ -24,13 +24,13 @@ if (!require(rgbif)) install.packages("rgbif")
 
 # importar presencias de desman iberico:
 library(rgbif)
-Galpyr_GBIF <- occ_data(scientificName = "Galemys pyrenaicus")
+Galpyr_GBIF <- occ_data(scientificName = "Galemys pyrenaicus", limit = 200000)
 sapply(Galpyr_GBIF, names)
 Galpyr_coords <- as.data.frame(na.omit(Galpyr_GBIF$data[ , c("decimalLongitude", "decimalLatitude")]))
 nrow(Galpyr_coords)  # 484 (cuando yo hice el download)
 
 # obtener presencias de salamandra lusitanica:
-Chilus_GBIF <- occ_data(scientificName = "Chioglossa lusitanica")
+Chilus_GBIF <- occ_data(scientificName = "Chioglossa lusitanica", limit = 200000)
 Chilus_coords <- as.data.frame(na.omit(Chilus_GBIF$data[ , c("decimalLongitude", "decimalLatitude")]))
 nrow(Chilus_coords)  # 303 (cuando yo hice el download)
 
