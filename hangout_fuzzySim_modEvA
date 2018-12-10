@@ -5,7 +5,7 @@
 ## con los paquetes R 'fuzzySim' y 'modEvA'
 ## [https://www.youtube.com/watch?v=uo0kgxOd_fM]
 
-## [actualizado 13 noviembre 2018] ##
+## [actualizado 10 diciembre 2018] ##
 
 ## A. Marcia Barbosa
 ## CIBIO/InBIO - Universidade de Evora (Portugal)
@@ -212,7 +212,7 @@ plot(cuadrics_rast, xlim = c(-24, 6), ylim = c(26, 45))
 # y utilizarla para sacar la media de cada variable por cuadricula:
 
 wclim_cuadrics <- zonalFromZip(zip.file = wclim_file,  # zip con las variables raster
-                               zones.rast = cuadrics_rast,  # mapa con las unidades geograficas
+                               zones.map = cuadrics_rast,  # mapa con las unidades geograficas
                                fun = "mean",  # funcion para sacar las variables (en este caso, media por cuadricula)
                                rast.file.ext = ".bil",  # extension de los archivos raster
                                aux.file.ext = ".hdr")  # extension del archivo auxiliar
