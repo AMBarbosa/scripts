@@ -1,10 +1,11 @@
 library(terra)
 library(geodata)
 
+# (set working directory to source file location?)
+
 ?geodata::bio_oracle
 
 var_names <- c("Calcite", "Chlorophyll", "Cloud.cover", "Current.Velocity", "Diffuse.attenuation", "Dissolved.oxygen", "Ice.cover", "Ice.thickness", "Iron", "Light.bottom", "Nitrate", "Par", "pH", "Phosphate", "Phytoplankton", "Primary.productivity", "Salinity", "Silicate", "Temperature")
-
 
 # currently, geodata::bio_oracle() only supports one variable at a time, so let's loop:
 for (v in var_names) {
