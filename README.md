@@ -1,2 +1,2 @@
 # scripts
-spotting errors in species occurrence databases
+assorted scripts for assorted tasks
