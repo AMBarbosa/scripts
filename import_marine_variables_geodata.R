@@ -1,9 +1,6 @@
 library(terra)
 library(geodata)
 
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-
-
 ?geodata::bio_oracle
 
 var_names <- c("Calcite", "Chlorophyll", "Cloud.cover", "Current.Velocity", "Diffuse.attenuation", "Dissolved.oxygen", "Ice.cover", "Ice.thickness", "Iron", "Light.bottom", "Nitrate", "Par", "pH", "Phosphate", "Phytoplankton", "Primary.productivity", "Salinity", "Silicate", "Temperature")
@@ -37,13 +34,3 @@ terra::crs(vars2, proj = TRUE)
 vars2 <- terra::project(vars2, vars)
 vars <- c(vars, vars2)
 terra::nlyr(vars)
-
-
-# if you need a polygon map of the marine areas, you can get one with:
-
-wrld <- terra::vect(terra::ext())
-countries <- geodata::world(path = "outputs")
-terra::plot(wrld, col = "lightblue")
-terra::plot(countries, col = "tan", add = TRUE)
-marine <- terra::erase(wrld, countries)
-plot(marine, col = "lightblue")
