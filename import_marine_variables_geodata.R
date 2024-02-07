@@ -9,7 +9,7 @@ layer_names <- c("Calcite", "Chlorophyll", "Cloud.cover", "Current.Velocity", "D
 
 # currently, geodata::bio_oracle() only supports one layeriable at a time, so let's loop:
 for (v in layer_names) {
-  geodata::bio_oracle(path = "../outputs", layer = v, stat = ifelse(v == "pH", "", "Mean"), benthic = FALSE)  # check help file for other values of "stat" and "benthic"
+  geodata::bio_oracle(path = "../outputs", var = v, stat = ifelse(v == "pH", "", "Mean"), benthic = FALSE)  # check help file for other values of "stat" and "benthic"
 }
 
 list.files("../outputs")
