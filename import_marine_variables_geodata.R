@@ -21,7 +21,7 @@ layer_files
 # exclude the different layers for now:
 layers <- terra::rast(layer_files[-grep("pH|calcite|Par", layer_files)])
 terra::nlyr(layers)
-terra::plot(layers)
+terra::plot(layers[[1]])
 
 # check their extents:
 terra::ext(rast(layer_files[grep("pH", layer_files)]))
@@ -30,8 +30,9 @@ terra::ext(rast(layer_files[grep("Par", layer_files)]))
 
 # combine, project and append the different layers:
 layers2 <- terra::rast(layer_files[grep("pH|calcite|Par", layer_files)])
-terra::plot(layers2)
+terra::plot(layers2[[1]])
 terra::crs(layers2, proj = TRUE)
 layers2 <- terra::project(layers2, layers)
+terra::plot(layers2[[1]])
 layers <- c(layers, layers2)
 terra::nlyr(layers)
