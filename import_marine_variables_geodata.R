@@ -7,7 +7,7 @@ library(geodata)
 
 layer_names <- c("Calcite", "Chlorophyll", "Cloud.cover", "Current.Velocity", "Diffuse.attenuation", "Dissolved.oxygen", "Ice.cover", "Ice.thickness", "Iron", "Light.bottom", "Nitrate", "Par", "pH", "Phosphate", "Phytoplankton", "Primary.productivity", "Salinity", "Silicate", "Temperature")
 
-# currently, geodata::bio_oracle() only supports one layeriable at a time, so let's loop:
+# currently, geodata::bio_oracle() only supports one layer at a time, so let's loop:
 for (v in layer_names) {
   geodata::bio_oracle(path = "../outputs", var = v, stat = ifelse(v == "pH", "", "Mean"), benthic = FALSE)  # check help file for other values of "stat" and "benthic"
 }
@@ -18,7 +18,7 @@ layer_files
 
 # layers <- terra::rast(layer_files)  # Error: [rast] extents do not match
 
-# exclude the different layers for now:
+# exclude the different layers momentarily:
 layers <- terra::rast(layer_files[-grep("pH|calcite|Par", layer_files)])
 terra::nlyr(layers)
 terra::plot(layers[[1]])
